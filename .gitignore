@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environments
+env/
+venv/
+ENV/
+.venv/
+
+# OS crap
+.DS_Store
+
+# Secrets and sensitive
+.env
+wishlist.json
+
+# IDE/editor stuff
+.vscode/
+.idea/
