@@ -1,88 +1,141 @@
-# WishlistBot
+# 🛒 Discord Wishlist Bot
 
-WishlistBot is a Discord bot designed to help users curate, manage, and track their product wishlists directly within a Discord channel. Users can drop product links, and the bot will scrape essential details such as the product title and price, storing them in a persistent wishlist. It also supports easy retrieval and browsing of saved wishlist items with intuitive pagination.
+A production-grade Discord bot that captures product URLs posted in server channels,
+scrapes item details (title + price), and stores per-channel wishlists in Postgres.
 
----
-
-## Features
-
-- **Add Wishlist Items**  
-  Drop any product URL (Amazon, Puma, Nike, or any website). The bot automatically scrapes product information and saves it.
-
-- **View Latest Wishlist Items**  
-  Use the command `!wishlist` to view the latest 5 items you added to your wishlist.
-
-- **View Full Wishlist with Pagination**  
-  Use `!wishlist all` to view your entire wishlist, displayed in pages of 5 items each. Navigate pages using reactions ⏮️ (previous) and ⏭️ (next).
-
-- **Clean Discord Embeds**  
-  When you add a product link, the bot replies with a neat embedded message showing the product title, price, and link.
-
-- **User-specific Pagination**  
-  Pagination sessions are tracked per user to ensure that only the requester can navigate through their wishlist pages.
+Deployed on Fly.io with Neon Postgres.
 
 ---
 
-## How to Use
+## 🚀 Features
 
-### Step 1: Set up your Discord Bot and Environment
+### ✅ Link Capture
+- Users paste product URLs in a channel
+- Bot scrapes:
+  - Title (OG tag / fallback)
+  - Price
+- Automatically stores in Postgres
+- Duplicate detection per channel (DB-level unique constraint)
 
-1. **Create a Discord bot application**  
-   - Go to the [Discord Developer Portal](https://discord.com/developers/applications) and create a new application.  
-   - Add a bot user to your application and get the bot token.
+### ✅ Per-Channel Isolation
+Each Discord channel has its own wishlist.
+Data is separated by:
+- `guild_id`
+- `channel_id`
 
-2. **Invite the bot to your server**  
-   - Generate an OAuth2 invite URL with the `bot` scope and the permissions to read/send messages, embed links, and add reactions.  
-   - Use this URL to invite the bot to your desired Discord server.
+### ✅ Slash Commands (Modern UX)
 
-3. **Enable Developer Mode on Discord** (to get Channel ID)  
-   - Go to User Settings → Advanced → Enable Developer Mode.  
-   - Right-click your target wishlist channel and click "Copy ID".
+All commands are slash-based:
+/wishlist latest
+/wishlist all
+/wishlist export
+/wishlist clear
+/wishlist enable
+/wishlist disable
 
-4. **Create a `.env` file in your project root** with these entries:  
-
-DISCORD_TOKEN=your_bot_token_here
-CHANNEL_ID=your_channel_id_here
 
 ---
 
-### Step 2: Install dependencies
+## 📌 Slash Commands
 
-Make sure you have Python 3.8+ installed, then install required packages:
+### `/wishlist latest`
+Shows the latest 5 wishlist items for the current channel.
 
-```bash
-pip install -r requirements.txt
+### `/wishlist all`
+Shows all wishlist items with button-based pagination.
+
+### `/wishlist export`
+Downloads the entire channel wishlist as a JSON file.
+
+### `/wishlist clear`
+Admin-only. Clears all wishlist items in the current channel.
+
+### `/wishlist enable`
+Admin-only. Enables wishlist capture in the current channel.
+
+### `/wishlist disable`
+Admin-only. Disables wishlist capture in the current channel.
+
+---
+
+## 🧠 Architecture
+
+### Bot Layer
+- discord.py 2.x
+- Slash commands via `app_commands`
+- Button-based pagination via `discord.ui.View`
+
+### Database Layer
+Postgres schema:
+
+### `channel_config`
+| column      | type    | description |
+|------------|---------|------------|
+| guild_id   | string  | Discord server ID |
+| channel_id | string  | Discord channel ID |
+| enabled    | boolean | Capture enabled flag |
+
+### `wishlist_item`
+| column      | type    |
+|------------|---------|
+| id         | serial PK |
+| guild_id   | string |
+| channel_id | string |
+| url        | text |
+| url_norm   | text |
+| title      | text |
+| price      | text |
+| user_tag   | text |
+| created_at | timestamp |
+
+Unique constraint: (channel_id, url_norm)
+
+---
+
+## 🔐 Environment Variables
+
+Required: DISCORD_TOKEN, DATABASE_URL
 
 
-(Requirements include: discord.py, requests, beautifulsoup4, python-dotenv)
+Optional (for slash command sync):
+SYNC_COMMANDS=true
+SYNC_GUILD_ID=123456789012345678
 
 
-Step 3: Run the bot
+---
 
-Simply run:
+## 🏗 Deployment
 
-python bot.py
+### Fly.io (Worker App)
 
-The bot will connect to Discord and be ready to use in your specified channel.
+### Postgres
+- Neon (free tier)
+- DATABASE_URL stored in Fly secrets
 
-⸻
+---
 
-Step 4: Interact with the bot
-	•	Add wishlist items:
-Paste any product URL in the wishlist channel. The bot will scrape and confirm it with an embedded message.
-	•	Show last 5 wishlist items:
-Type: !wishlist
+## 🛡 Production Design Decisions
 
+- No tokens stored in repo
+- DB-level duplicate enforcement
+- Channel-level isolation
+- Admin-only destructive commands
+- Default capture enabled unless configured
+- Safe transaction rollback handling
 
-	•	Show entire wishlist with pagination:
-Type: !wishlist all
+---
 
-Navigate pages by clicking the ⏮️ and ⏭️ reactions on the bot’s message.
+## 📈 Future Enhancements
 
-⸻
+- Web dashboard (FastAPI + OAuth2)
+- Server-level configuration UI
+- Multi-process deployment (bot + web)
+- Role-based capture controls
+- Background price refresh worker
 
-Project Structure
-	•	bot.py — main Discord bot logic, message handling, commands, pagination
-	•	scraper.py — generic web scraper for product titles and prices
-	•	.env — environment variables for Discord token and channel ID
-	•	wishlist.json — persistent JSON file storing wishlist items
+---
+
+## 👨‍💻 Author
+
+Built and maintained by Yeswanth.
+Production deployed on Fly.io.
