@@ -3,6 +3,8 @@
 A production-grade Discord bot that captures product URLs posted in server channels,
 scrapes item details (title + price), and stores per-channel wishlists in Postgres.
 
+Invite link: https://discord.com/oauth2/authorize?client_id=1393497189350637658&permissions=2147601472&integration_type=0&scope=bot
+
 Deployed on Fly.io with Neon Postgres.
 
 ---
